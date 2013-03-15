@@ -1,0 +1,7 @@
+Atenção
+
+Não dê commit na pasta despachohidrotermico/dados, pois os dados são muito grande
+
+Não Usei nenhum .h, algo de errado nisso
+
+
