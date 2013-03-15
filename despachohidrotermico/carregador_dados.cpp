@@ -9,6 +9,7 @@
 #include "../usina/usina_termica.cpp"
 #include "../usina/usina_hidreletrica.cpp"
 #include "../usina/subsistema.cpp"
+#include <omp.h>
 
 using namespace std;
 using namespace boost;
@@ -76,8 +77,9 @@ vector<UsinaTermica> CarregadorDados::carregar_usinas_termicas() {
   vector<string> usinas_termicas = file_handler.open_file(this->arquivoDadosTermicas);
   int i;
   
-
   for(i = 0; i < usinas_termicas.size(); i++) {
+
+    //printf("tid %d i %d\n", omp_get_thread_num(), i);
     vector<string> tokens;
     UsinaTermica usina_termica;
 
@@ -153,11 +155,12 @@ vector<UsinaHidreletrica> CarregadorDados::carregar_usinas_hidreletricas() {
   vector<string> dados_arquivo = file_handler.open_file(this->arquivoDadosHidreletricas);
 
   vector<string> tokens;
-  string delemitador(" ");
+  string delimitador(" ");
 
-  for (int i = 0; i < dados_arquivo.size(); i++) {
+  int i;
+  for (i = 0; i < dados_arquivo.size(); i++) {
     string linha = dados_arquivo.at(i).data();
-    split(tokens, linha, is_any_of(delemitador));
+    split(tokens, linha, is_any_of(delimitador));
 
     UsinaHidreletrica usina;
     usina.id_usina = (int) lexical_cast<double>(tokens.at(0).data());

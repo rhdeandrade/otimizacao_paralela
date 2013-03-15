@@ -8,13 +8,17 @@
 #include "../usina/usina_hidreletrica.cpp"
 #include "../usina/subsistema.cpp"
 #include "restricoes/restricao.cpp"
-
+#include <algorithm>
 
 
 PlanoProducao::PlanoProducao(PlanoProducao *p) {
-  this->termicas.swap(p->termicas);
-  this->hidreletricas.swap(p->hidreletricas);
-  this->subsistemas.swap(p->subsistemas);
+  vector<UsinaHidreletrica> h(p->hidreletricas);
+  vector<UsinaTermica> t(p->termicas);
+  vector<Subsistema> s(p->subsistemas);
+
+  this->termicas = t;
+  this->hidreletricas = h;
+  this->subsistemas = s;
 }
 
 PlanoProducao::PlanoProducao() {}
@@ -33,7 +37,9 @@ double PlanoProducao::planejar_maximizacao_energia_hidraulica(vector<UsinaHidrel
 
   h = OtimizacaoDespachoHidrotermicoGlobals::ordernar_hidreletricas_tamanho_reservatorio(h, false);
 
-  for (int i = 0; i < h.size(); ++i) {
+  int i;
+  //#pragma omp parallel for shared(h, cascata74, resultado) private(i)
+  for (i = 0; i < h.size(); ++i) {
     if (find(cascata74.begin(), cascata74.end(), h.at(i).id_usina) != cascata74.end()) {
       continue;
     }
@@ -100,7 +106,11 @@ double PlanoProducao::produzir_energia_hidraulica(vector<UsinaHidreletrica> hidr
 }
 
 PlanoProducao PlanoProducao::executar(PlanoProducao p, int counter) {
-  for (int i = 0; i < p.subsistemas.size(); i++) {
+
+  int i;
+  //#pragma omp parallel for shared(p) private(i)
+  for (i = 0; i < p.subsistemas.size(); i++) {
+    //printf("tid %d i %d\n", omp_get_thread_num(), i);
     vector<UsinaHidreletrica> hidreletricas = OtimizacaoDespachoHidrotermicoGlobals::obter_usinas_hidreletricas(p.hidreletricas, p.subsistemas.at(i).id_subsistema);
     vector<UsinaTermica> termicas = OtimizacaoDespachoHidrotermicoGlobals::obter_usinas_termicas(p.termicas, p.subsistemas.at(i).id_subsistema);
     double total_energia_hidraulica_sobrando = planejar_maximizacao_energia_hidraulica(p.hidreletricas, counter);
@@ -137,24 +147,33 @@ double PlanoProducao::calcularValorPresente(int periodo) {
 
 double PlanoProducao::objectiveFunctionValue() {
   double custo = 0;
+  int i, j;
+    
+  //   cout << "tid: " << omp_get_thread_num() << "\n";
+  // vector<UsinaTermica> termicas = this->termicas;
+  // vector<Subsistema> subsistemas = this->subsistemas;
+  // PlanoProducao* p = this;
 
-  for (int i = 0; i < OtimizacaoDespachoHidrotermicoGlobals::NUM_PERIODOS; i++) {
-    double custoTermica = 0;
-    double custoDeficit = 0;
-    for (int j = 0; j < this->termicas.size(); j++) {
-      custoTermica += this->termicas.at(j).custo_termica_mega_watt_medio(i);
-    }
+  //   for (i = 0; i < OtimizacaoDespachoHidrotermicoGlobals::NUM_PERIODOS; i++) {
+  //     double custoTermica = 0;
+  //     double custoDeficit = 0;
 
-    for (int j = 0; j < this->subsistemas.size(); j++) {
-      if (this->subsistemas.at(j).id_subsistema != 5)
-        custoDeficit += this->subsistemas.at(j).custoDeficit(i);
-    }
 
-    double result = custoTermica + custoDeficit;
-    result *= this->calcularValorPresente(i);
+  //     for (j = 0; j < termicas.size(); j++) {
+  //       custoTermica += termicas.at(j).custo_termica_mega_watt_medio(i);
+  //     }
 
-    custo += result;
-  }
+  //     for (j = 0; j < subsistemas.size(); j++) {
+  //       if (subsistemas.at(j).id_subsistema != 5)
+  //         custoDeficit += subsistemas.at(j).custoDeficit(i);
+  //     }
+
+  //     double result = custoTermica + custoDeficit;
+  //     result *= p->calcularValorPresente(i);
+
+  //     custo += result;
+  //   }
+
 
   return custo;
 }
